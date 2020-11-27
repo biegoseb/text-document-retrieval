@@ -103,8 +103,9 @@ class InvertedIndex:
           if word not in stoplist:
             token = stemmer.stem(word)
             if token not in self.inverted_index.keys():
-              self.inverted_index[token] = { }
+              self.inverted_index[token] = {"df":0}
             if file not in self.inverted_index[token].keys():
+              self.inverted_index[token]["df"] += 1
               self.inverted_index[token][file] = {"tf":0}
               self.inverted_index[token][file]["tweets"] = [ ]
             found = False
@@ -117,8 +118,30 @@ class InvertedIndex:
               self.inverted_index[token][file]["tweets"].append({"tweet_id":text[1], "freq":1})
             self.inverted_index[token][file]["tf"] += 1
       print(file)
-    for token in self.inverted_index:
-      token["idf"] = math.log(len(self.tweets_files)/len(token[]), 10)
+    for token in self.inverted_index.keys():
+      self.inverted_index[token]["idf"] = math.log(len(self.tweets_files)/self.inverted_index[token]["df"], 10)
+      self.inverted_index[token]["score"] = 0
+      for doc in self.inverted_index[token].keys():
+        print(doc)
+        if doc not in ["idf","score","df"]:
+          tf = self.inverted_index[token][doc]["tf"]
+          idf = self.inverted_index[token]["idf"]
+          self.inverted_index[token][doc]["tf_idf"] = (1 + math.log(tf)) * idf
+          tf_idf = self.inverted_index[token][doc]["tf_idf"]
+          self.inverted_index[token]["score"] += tf_idf
+    for doc in self.tweets_files:
+      norma = 0
+      for token in self.inverted_index.keys():
+        if doc in self.inverted_index[token].keys():
+          
+          norma += self.inverted_index[token][doc]["tf_idf"]**2
+      norma = math.sqrt(norma)
+      for token in self.inverted_index.keys():
+        if doc in self.inverted_index[token].keys():
+          self.inverted_index[token][doc]["norma"] = self.inverted_index[token][doc]["tf_idf"]/norma
+
+
+
 
 def main():
   index = InvertedIndex()
