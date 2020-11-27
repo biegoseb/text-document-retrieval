@@ -10,38 +10,32 @@ import json
 import math
 import numpy as np
 
-nltk.download('stopwords')
-nltk.download('punkt')
-
 ROOT = "./"
 EXT = ".json"
 BEG = "tweets_2018-"
 
-#abc = []
-#for c in string.ascii_lowercase[:27]:
-#	abc.append(c)
-#abc.append('ñ')
-#abc.append('á')
-#abc.append('é')
-#abc.append('í')
-#abc.append('ó')
-#abc.append('ú')
-#abc.append('')
-#print(abc)
+nltk.download('stopwords')
+nltk.download('punkt')
+stoplist = stopwords.words("spanish")
+stoplist += ['?','aqui','.',',','»','«','â','ã','>','<','(',')','º','u']
+stemmer = SnowballStemmer('spanish')
 
-def remove_espacial_character(txt):
-	characters = ('\"','\'','º','&','¿','?','¡','!',' “','…','👏',
-								'-','—','‘','•','›','‼','€','£','↑','→','↓','↔',
-								'↘','↪','√','∧','⊃','⌒','⌛','⏬','⏯','⏰','⏹')
-	for character in characters:
-		txt = txt.replace(character, "")
-	return txt
+class InvertedIndex:
+  inverted_index = { }
+  tweets_files = [ ]
 
-def remove_punctuation ( text ):
-  return re.sub('[%s]' % re.escape(string.punctuation), ' ', text)
+  def read_files(self):
+    for base, dirs, files in os.walk(ROOT):
+      for file in files:
+        f = join(base, file)
+        if f.endswith(EXT) and BEG in f:
+          self.tweets_files.append(f)
+  
+  def remove_punctuation(self, text):
+    return re.sub('[%s]' % re.escape(string.punctuation), ' ', text)
 
-def remove_emoji(txt):
-  emoj = re.compile("["
+  def remove_emoji(self, text):
+    emoj = re.compile("["
       u"\U0001F600-\U0001F64F"  # emoticons
       u"\U0001F300-\U0001F5FF"  # symbols & pictographs
       u"\U0001F680-\U0001F6FF"  # transport & map symbols
@@ -61,201 +55,104 @@ def remove_emoji(txt):
       u"\ufe0f"  # dingbats
       u"\u3030"
                     "]+", re.UNICODE)
-  return re.sub(emoj, '', txt)
+    return re.sub(emoj, '', text)
 
-def recovery(list):
-	print(list)
+  def remove_url(self, text):
+    t = text.find('https://t.co/')
+    if t != -1:
+      text = re.sub('https://t.co/\w{10}', '', text)
+    return text
 
-def AND(list1,list2):
-	list_res=[]
-	min_=min(len(list1),len(list2))
-	j=0
-	k=0
-	for i in range(min_):
-		if(list1[j]==list2[k]):
-			list_res.append(list1[j])
-			j+=1
-			k+=1
-		elif(int(list1[j][-5])<int(list2[k][-5])):
-			j+=1
-		else:
-			k+=1
-	return list_res
+  def remove_special_character(self, text):
+    characters = ('\"','\'','º','&','¿','?','¡','!',' “','…','👏',
+								'-','—','‘','•','›','‼','€','£','↑','→','↓','↔',
+								'↘','↪','√','∧','⊃','⌒','⌛','⏬','⏯','⏰','⏹')
+    for char in characters:
+      text = text.replace(char, "")
+    return text
 
-def OR(list1,list2):
-	list_rest=[]
-	j=0
-	k=0
-	while(j<len(list1) and k<len(list2)):
-		if(list1[j]==list2[k]):
-			list_rest.append(list1[j])
-			j+=1
-			k+=1
-		elif(int(list1[j][-5])<int(list2[k][-5])):
-			list_rest.append(list1[j])
-			j+=1
-		else:
-			list_rest.append(list2[k])
-			k+=1
-	if(j!=k):
-		if(j==len(list1)):
-			list_rest+=list2[k:len(list2)]
-		else:
-			list_rest+=list1[j:len(list1)]
-	return list_rest
+  def clean_text(self, text):
+    text = self.remove_special_character(text)
+    text = self.remove_punctuation(text)
+    text = self.remove_emoji(text)
+    text = self.remove_url(text)
+    text = nltk.word_tokenize(text)
+    return text
 
-def AND_NOT(list1,list2):
-	list_res=[]
-	j=0
-	k=0
-	while(j<len(list1) and k<len(list2)):
-		if(list1[j]==list2[k]):
-			j+=1
-			k+=1
-		elif(int(list1[j][-5])<int(list2[k][-5])):
-			list_res.append(list1[j])
-			j+=1
-		elif(int(list1[j][-5])>int(list2[k][-5])):
-			k+=1
-	if(j<len(list1)):
-		list_res+=list1[j:len(list1)]
-	return list_res
+  def create_doc(self, file, id):
+    doc = {
+            "doc_id": file,
+            "tweets": [
+                        {
+                          "tweet_id": id,
+                          "freq": 1
+                        }
+                      ]
+          }
+    return doc
 
-def L(key):
-	_token=stemmer.stem(key.lower())
-	return data[_token]
+  def create_inverted_index(self):
+    self.read_files()
+    for file in self.tweets_files:
+      json_file = open(file, encoding = 'utf-8').read()
+      text_list = [(e['text'],e['id']) for e in json.loads(json_file) if not e["retweeted"]]
+      for text in text_list:
+        t = text[0]
+        t = self.clean_text(t.lower())
+        for word in t:
+          if word not in stoplist:
+            token = stemmer.stem(word)
+            if token not in self.inverted_index.keys():
+              self.inverted_index[token] = { }
+            if file not in self.inverted_index[token].keys():
+              self.inverted_index[token][file] = {"tf":0}
+              self.inverted_index[token][file]["tweets"] = [ ]
+            found = False
+            for x in self.inverted_index[token][file]["tweets"]:
+              if x["tweet_id"] == text[1]:
+                found = True
+                x["freq"] += 1
+                break
+            if not found:
+              self.inverted_index[token][file]["tweets"].append({"tweet_id":text[1], "freq":1})
+            self.inverted_index[token][file]["tf"] += 1
+      print(file)
+    for token in self.inverted_index:
+      token["idf"] = math.log(len(self.tweets_files)/len(token[]), 10)
 
-class Document:
-	tweet = ""
-	count = 0
-	tweets_ids = []
-	def __init__(self, tweet, count):
-		self.tweet = tweet
-		self.count = count
+def main():
+  index = InvertedIndex()
+  index.create_inverted_index()
+  sys.stdout = open('inverted_index.txt', 'w')
+  sys.stdout.reconfigure(encoding = 'utf-8')
+  data_to_print = sorted(index.inverted_index.items())
+  #for token in data_to_print:
+  #  data = json.dumps(token)
+  #  print(data)
+  for key, value in data_to_print:
+    print(key,value)
 
-# {word : tweet}
-index = {}
-tweets = []
-for base, dirs, files in os.walk(ROOT):
-    for file in files:
-        f = join(base, file)
-        if f.endswith(EXT) and BEG in f:
-            tweets.append(f)
+main()
 
-stoplist = stopwords.words("spanish")
-stoplist += ['?','aqui','.',',','»','«','â','ã','>','<','(',')','º','u']
-stemmer = SnowballStemmer('spanish')
-
-c=1
-for tweet in tweets:
-	json_tweet = open(tweet, encoding = 'utf-8').read()
-	text_list = [(e['text'],e['id']) for e in json.loads(json_tweet) if not e["retweeted"]]
-	tokens = []
-	for txt in text_list:
-		txt = txt[0]
-		t = txt.find('https://t.co/')
-		if t != -1:
-			txt = re.sub('https://t.co/\w{10}', '', txt)
-		txt = remove_espacial_character(remove_punctuation(txt.lower()))
-		txt = remove_emoji(txt)
-		txt = nltk.word_tokenize(txt)
-		for word in txt:
-			if word not in stoplist:
-				_token = stemmer.stem(word)
-				if not _token in index:
-					index[_token] = {}
-					index[_token]['tweets'] = []
-					index[_token]['weight'] = 1
-				else:
-					index[_token]['weight'] += 1
-				if len(index[_token]['tweets']) > 0:
-					if tweet != index[_token]['tweets'][-1].tweet:
-						doc = Document(tweet, 1)
-						index[_token]['tweets'].append(doc)
-					else:
-						index[_token]['tweets'][-1].count += 1
-				else:
-					doc = Document(tweet, 1)
-					index[_token]['tweets'].append(doc)
-	print(f"{c}")
-	c+=1
-		
-
-sorted_data = sorted(index, key = lambda v: len(index[v]['tweets']), reverse = True)
-
-data = {}
-for i in sorted_data:
-	if not i in data:
-		data[i] = []
-	data[i] = index[i]['tweets']
-
-print("carajo")
-sys.stdout = open('inverted_index.txt', 'w')
-sys.stdout.reconfigure(encoding = 'utf-8')
-data_to_print = sorted(data.items())
-
-
-for key, value in data_to_print:
-	print(key, f"(w:{index[key]['weight']}", end="")
-	tf = 0
-	idf = math.log(len(tweets)/len(value), 10)	
-	for v in value:
-		tf += 1 + math.log(v.count, 10)
-		print("[", v.tweet, ",", v.count, "]", end=",")
-	print(f"(tf:{round(tf, 2)})", end=",")
-	print(f"(idf:{round(idf, 2)})", end=",")
-	print(f"(TF-IDF:{round(tf*idf, 2)})")
-
-def cosine(q, doc):
-  return np.dot(q, doc) / (np.linalg.norm(q) * np.linalg.norm(doc))
-
-def get_terms(query_text):
-	query_text = remove_espacial_character(remove_punctuation(query_text.lower()))
-	query_text = remove_emoji(query_text)
-	query_text = nltk.word_tokenize(query_text)
-	tokens = []
-	for word in query_text:
-			if word not in tokens:
-				tokens.append(word)
-	tokens_clean = tokens.copy()
-	for token in tokens:
-		if token in stoplist:
-			tokens_clean.remove(token)
-	stemmed_tokens = []
-	for token in tokens_clean:
-		token = stemmer.stem(token)
-		stemmed_tokens.append(token)
-	return stemmed_tokens
-
-def get_TFIDF(query_terms):	
-	tf_idf_list = []
-	for t in query_terms:
-		tf = 0
-		idf = math.log(len(tweets)/len(data[t]), 10)
-		for doc in data[t]:
-			tf += 1 + math.log(doc.count, 10)
-		tf_idf_list.append(round(tf*idf,2))
-	return tf_idf_list
-
-def get_document(i, query_terms):
-	pass
-
-def retrievalCosine1(collection, query_text): #query : texto
-  result = []
-  query_terms = get_terms(query_text)
-  query = get_TFIDF(queryTerms) #tf-idf del query        
-  for i in range(len(collection)):        
-      doc = collection.get_document(i, query_terms); #tf-idf del documento
-      sim = cosine(query, doc)
-      result.append( (doc.id, sim) )#[ (doc1, sc1), (doc, sc2) ]    
-  result.sort(key = lambda  tup: tup[1])
-  return result
-
-#q = input("Ingrese consulta: ")
-#t = get_terms(q)
-
-for doc in data["aventaj"]:
-	print(doc.tweet)
-
-#sys.stdout = open('index2.txt', 'w')
-#sys.stdout.reconfigure(encoding = 'utf-8')
+'''
+index = {          
+          "carajo": {
+            "idf": 0.65, (log(N/len(docs))),
+            "score": sum(docs[i].tf_idf),
+            "tweets_2018-08-07": {
+                    "tf": 58, sum(tweets[i].freq)
+                    "tf_idf":  (1 + log(tf)) * idf,
+                    "norma": tf_idf/norm
+                    "tweets": [
+                                {
+                                  "tweet_id": 12345,
+                                  "freq": 10
+                                },
+                                {},{},...
+                              ]
+                  }
+          },
+          "reggiar": {},
+          {}, ...   
+        }
+'''
