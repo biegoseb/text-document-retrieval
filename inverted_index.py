@@ -1,14 +1,12 @@
-import unicodedata
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
 import re, string
 import os
 import sys
-from os.path import isfile, join
+from os.path import join
 import json
 import math
-import numpy as np
 
 ROOT = "./"
 EXT = ".json"
@@ -79,21 +77,11 @@ class InvertedIndex:
     text = nltk.word_tokenize(text)
     return text
 
-  def create_doc(self, file, id):
-    doc = {
-            "doc_id": file,
-            "tweets": [
-                        {
-                          "tweet_id": id,
-                          "freq": 1
-                        }
-                      ]
-          }
-    return doc
-
   def create_inverted_index(self):
     self.read_files()
+    cont = 0
     for file in self.tweets_files:
+    #file = self.tweets_files[0]
       json_file = open(file, encoding = 'utf-8').read()
       text_list = [(e['text'],e['id']) for e in json.loads(json_file) if not e["retweeted"]]
       for text in text_list:
@@ -117,12 +105,12 @@ class InvertedIndex:
             if not found:
               self.inverted_index[token][file]["tweets"].append({"tweet_id":text[1], "freq":1})
             self.inverted_index[token][file]["tf"] += 1
-      print(file)
+      cont += 1
+      print(cont, file)
     for token in self.inverted_index.keys():
       self.inverted_index[token]["idf"] = math.log(len(self.tweets_files)/self.inverted_index[token]["df"], 10)
       self.inverted_index[token]["score"] = 0
       for doc in self.inverted_index[token].keys():
-        print(doc)
         if doc not in ["idf","score","df"]:
           tf = self.inverted_index[token][doc]["tf"]
           idf = self.inverted_index[token]["idf"]
@@ -133,16 +121,44 @@ class InvertedIndex:
       norma = 0
       for token in self.inverted_index.keys():
         if doc in self.inverted_index[token].keys():
-          
           norma += self.inverted_index[token][doc]["tf_idf"]**2
       norma = math.sqrt(norma)
       for token in self.inverted_index.keys():
         if doc in self.inverted_index[token].keys():
           self.inverted_index[token][doc]["norma"] = self.inverted_index[token][doc]["tf_idf"]/norma
 
+  def compare_query(self, query):
+    query = self.clean_text(query)
+    index_query = {}
+    for word in query:
+      word = stemmer.stem(word)
+      if word not in index_query.keys():
+        index_query[word] = { "tf" : 0 }
+      index_query[word]["tf"] += 1
+    norma = 0
+    for word in index_query.keys():
+      if word in self.inverted_index.keys():
+        index_query[word]["tf_idf"] = (1+math.log10(index_query[word]["tf"])) * self.inverted_index[word]["idf"]
+        norma += index_query[word]["tf_idf"]**2
+    norma = math.sqrt(norma)
+    for word in index_query.keys():
+      if "tf_idf" in index_query[word].keys():
+        index_query[word]["norma"] = index_query[word]["tf_idf"]/norma if norma != 0 else 0
+    cosenos = []
+    for file in self.tweets_files:
+      similarity = 0
+      tweets = []
+      for word in index_query.keys():
+        if "norma" in index_query[word].keys() and file in self.inverted_index[word].keys():
+          tweets_by_word = sorted(self.inverted_index[word][file]["tweets"], key = lambda v: v["freq"], reverse=True)
+          tweets.append({"word": word, "tweets": tweets_by_word})
+          similarity += index_query[word]["norma"] * self.inverted_index[word][file]["norma"]
+      cosenos.append({"docId": file, "coseno": similarity, "results": tweets})
+    cosenos = sorted(cosenos, key = lambda v: v["coseno"], reverse=True)
+    return cosenos
+    
 
-
-
+'''
 def main():
   index = InvertedIndex()
   index.create_inverted_index()
@@ -157,7 +173,6 @@ def main():
 
 main()
 
-'''
 index = {          
           "carajo": {
             "idf": 0.65, (log(N/len(docs))),
@@ -177,5 +192,75 @@ index = {
           },
           "reggiar": {},
           {}, ...   
+        }
+
+El señor Daniel Urresti me bloqueo por cuestionar continuamente su candidatura
+['senor', 'daniel', 'urresti', 'bloqueo', 'cuestionar', 'continuamente', 'candidatura']
+['sen', 'daniel', 'urresti', 'bloque', 'cuesti', 'continu', 'cand']
+[ {
+    'sen': {
+      'tf': frecuencia de la palabra en el query
+      'tf-idf': tf*idf
+      'norma': tf-idf/norm
+    }, 
+    'daniel': {
+      'tf': frecuencia de la palabra en el query
+      'tf-idf': tf*idf
+      'norma': tf-idf/norm
+    },
+    'urresti': {
+      'tf': frecuencia de la palabra en el query
+      'tf-idf': tf*idf
+      'norma': tf-idf/norm
+    },
+    'bloque': {
+      'tf': frecuencia de la palabra en el query
+      'tf-idf': tf*idf
+      'norma': tf-idf/norm
+    }, 
+    'cuesti': {
+      'tf': frecuencia de la palabra en el query
+      'tf-idf': tf*idf
+      'norma': tf-idf/norm
+    }, 
+    'continu': {
+      'tf': frecuencia de la palabra en el query
+      'tf-idf': tf*idf
+      'norma': tf-idf/norm
+    }, 
+    'cand' : {
+      'tf': frecuencia de la palabra en el query
+      'tf-idf': tf*idf
+      'norma': tf-idf/norm
+    }
+  }]
+
+index = {          
+          "carajo": {
+            "df": nº de tweets en los que aparece la palabra del total (20 mil)
+            "idf": math.log10(20000/len(tweets)),
+            "score": sum(tweets[i].tf_idf),
+            "tweets": [
+              {
+                "id": 1234134134
+                "tf": nº de veces que se repite la palabra en el tuit
+                "tf_idf": (1 + log(tf)) * idf,
+                "norma": tf_idf/norm
+              }
+            ]
+          },
+          "reggiar": {
+            "df": nº de tweets en los que aparece la palabra del total (20 mil)
+            "idf": math.log10(20000/len(tweets)),
+            "score": sum(tweets[i].tf_idf),
+            "tweets": [
+              {
+                "id": 1234134134
+                "tf": nº de veces que se repite la palabra en el tuit
+                "tf_idf": (1 + log(tf)) * idf,
+                "norma": tf_idf/norm
+              }
+            ]
+          },  
         }
 '''
