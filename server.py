@@ -29,5 +29,5 @@ def query():
 if __name__ == '__main__':
     inverted_index.create_inverted_index()
     app.secret_key = ".."
-    app.run(port=8080, threaded=True, host=('127.0.0.1'))
+    app.run(port=8081, threaded=True, host=('127.0.0.1'))
 
