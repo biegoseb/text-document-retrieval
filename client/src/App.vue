@@ -1,5 +1,7 @@
 <template>
   <div>
+    <h1 style="color: #00A2F5; font-family: 'Teko', sans-serif;">Inverted Index Text Retrieval Search Engine</h1>
+    <br>
     <img
       alt="Vue logo"
       src="./assets/twitter-logo.png"
@@ -25,6 +27,7 @@ export default {
 </script>
 
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Teko:wght@500&display=swap');
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;

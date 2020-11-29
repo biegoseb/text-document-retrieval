@@ -82,7 +82,7 @@ class InvertedIndex:
     self.read_files()
     cont = 0
     for file in self.tweets_files:
-      if (cont == 10):
+      if (cont == 20):
         break
       #file = self.tweets_files[0];
       json_file = open(file, encoding = 'utf-8')
@@ -120,7 +120,7 @@ class InvertedIndex:
         self.inverted_index[token]["score"] += self.inverted_index[token]["tweets"][tweet]["tf_idf"]
   
   def normalize(self):
-    count = 0
+    doc = self.tweets_ids[0]["doc"]
     for tweet in self.tweets_ids:
       norma = 0
       for word in self.inverted_index.keys():
@@ -130,8 +130,11 @@ class InvertedIndex:
       for word in self.inverted_index.keys():
         if tweet["tweet_id"] in self.inverted_index[word]["tweets"].keys():
           self.inverted_index[word]["tweets"][tweet["tweet_id"]]["norma"] = self.inverted_index[word]["tweets"][tweet["tweet_id"]]["tf_idf"]/norma
-      count += 1
+      if doc != tweet["doc"]:
+        print(doc)
+        doc = tweet["doc"]
       #print(count, tweet["tweet_id"])
+    print(len(self.tweets_ids))
   
   def compare_query(self, query):
     query = self.clean_text(query)

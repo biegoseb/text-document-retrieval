@@ -20,9 +20,11 @@
         </button>
       </div>
     </div>
-    <div class="container">
-      <div class="spinner-border text-primary align-self-center" style="width: 10rem; height: 10rem;" role="status" v-if="loading">
-        <span class="sr-only">Loading...</span>
+    <div class="container cont-height">
+      <div class="row h-100 justify-content-center align-items-center" v-if="loading">
+        <div class="spinner-border text-primary" style="width: 7rem; height: 7rem;" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
       </div>
       <div
         class="row w-100 mr-0 ml-0 justify-content-center"
@@ -30,7 +32,7 @@
         v-for="tweet in tweets"
         v-bind:key="tweet"
       >
-        <div class="tw-block-parent">
+        <div class="tw-block-parent w-100">
           <div class="timeline-TweetList-tweet">
             <div class="timeline-Tweet">
               <div class="timeline-Tweet-brand">
@@ -70,18 +72,7 @@ export default {
     return {
       query: "",
       loading: false,
-      tweets: [
-        {
-          id: 1041914794159292418,
-          date: "Tue Sep 18 05:00:19 +0000 2018",
-          text:
-            "RT noticiAmerica: #VOTO2018 Ricardo Belmont, candidato a la alcaldía de Lima por Perú Libertario, además mostró su preocupación por la cuestión de confianza anunciada por el presidente Martín Vizcarra https://t.co/qL20iYUikH",
-          user_id: 888894635518636033,
-          user_name: "@orekatty2",
-          location: {},
-          retweeted: false,
-        },
-      ],
+      tweets: [ ],
     };
   },
   methods: {
@@ -102,6 +93,13 @@ export default {
 
 <style>
 @import "https://fonts.googleapis.com/css?family=Roboto:400,700&subset=cyrillic";
+
+.cont-height{
+  height: 60vh;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
 .tw-block-parent {
   /*width: 500px;*/
   font: 10px Roboto, Helvetica, Arial, Tahoma, sans-serif;
