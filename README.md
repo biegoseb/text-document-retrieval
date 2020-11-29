@@ -16,7 +16,7 @@
 <summary>"Clic para navegar: "</summary>
 
 - [Introducción](#Introducción)
-- [Implementación del índice invertido](#Implementación del índice invertido)
+- [Implementación del índice invertido](#Implementación )
 - [Resultados experimentales](#Resultados-experimentales)
 - [Pruebas de uso y presentación](#Pruebas-de-uso-y-presentación)
 
