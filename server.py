@@ -4,14 +4,14 @@ from inverted_index import InvertedIndex
 import json, sys
 
 app = Flask(__name__)
-inverted_index = InvertedIndex()
+index = InvertedIndex()
 
 CORS(app)
 
 @app.route('/query/<index>', methods=["POST"])
 def query(index):
     req = request.get_json()
-    doc = inverted_index.compare_query(req['query'])
+    doc = index.compare_query(req['query'])
     #print(doc[int(index)])
     f = open(doc[int(index)]['docId'], encoding='utf-8')
     file = json.loads(f.read())
@@ -31,6 +31,12 @@ def query(index):
     return Response(json.dumps(tweets), status = 202, mimetype="application/json")
 
 if __name__ == '__main__':
-    inverted_index.create_inverted_index()
+    index.create_inverted_index()
+    sys.stdout = open('inverted_index.txt', 'w')
+    sys.stdout.reconfigure(encoding = 'utf-8')
+    data_to_print = sorted(index.inverted_index.items())
+    for token in data_to_print:
+      data = json.dumps(token)
+      print(data)
     app.secret_key = ".."
     app.run(port=8080, threaded=True, host=('127.0.0.1'))
