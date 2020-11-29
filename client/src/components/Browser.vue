@@ -65,18 +65,7 @@ export default {
   data() {
     return {
       query: "",
-      tweets: [
-        {
-          id: 1041914794159292418,
-          date: "Tue Sep 18 05:00:19 +0000 2018",
-          text:
-            "RT noticiAmerica: #VOTO2018 Ricardo Belmont, candidato a la alcaldía de Lima por Perú Libertario, además mostró su preocupación por la cuestión de confianza anunciada por el presidente Martín Vizcarra https://t.co/qL20iYUikH",
-          user_id: 888894635518636033,
-          user_name: "@orekatty2",
-          location: {},
-          retweeted: false,
-        },
-      ],
+      tweets: [],
     };
   },
   methods: {
