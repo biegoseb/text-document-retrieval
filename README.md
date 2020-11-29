@@ -37,7 +37,7 @@ En el informe se muestra las comparaciones al usar queries con los mejores resul
 Se ha construido un indice invertido optimo para recuperación por ranking para consultas de texto libre.
 
 
-Para esto, primero se lee todos los tweets almacenados que esten en formato json y sean del 2018:
+Para esto, primero se lee todos los tweets que estan almacenados en formato json y sean del 2018,y se guarda a una lista de nombre tweets_files:
 
     def read_files(self):
     for base, dirs, files in os.walk(./):
@@ -48,7 +48,7 @@ Para esto, primero se lee todos los tweets almacenados que esten en formato json
 
 
 #### Filtrar stopwords
-Con la ayuda de la libreria *nltk* creamos una lista de stopwords en español y añadimos más elementos
+Con la ayuda de la libreria *nltk* creamos los stopwords en español
 
     nltk.download('stopwords')
     stoplist = stopwords.words("spanish")
@@ -63,11 +63,31 @@ Vamos a obtener la raiz de la palabra con ayuda de la libreria *SnowballStemmer*
     token = stemmer.stem(word)
 
 #### Tokenización
+Vamos a usar una funcion de limpieza que removerá caracteres especiales, signos de puntuación, emojis y urls para tener un tweet limpio.
 
- _Como se hacen se guardan los stopwords_
+    def clean_text(self, text):
+        text = self.remove_special_character(text)
+        text = self.remove_punctuation(text)
+        text = self.remove_emoji(text)
+        text = self.remove_url(text)
+        text = nltk.word_tokenize(text)
+    return text
+
+ Finalmente, para obtener los tokens, vamos a recorrer todos los archivos de nuestra lista de tweets en  _tweets_files_ ,  vamos a guardar el texto en un _text_list_ y cada texto lo vamos a limpiar con nuestra función anterior. Con esto vamos a obtener los tokens y pasarlo al final por nuestro stoplist.
 
 
- _Como se almacena y limpia cada tweet?_
+     for file in self.tweets_files:
+          json_file = open(file, encoding = 'utf-8')
+          text_list = [(e['text'],e['id']) for e in json.loads(json_file.read()) if not e["retweeted"]]
+          json_file.close()
+          for text in text_list:
+            self.tweets_count += 1
+            t = text[0]
+            t = self.clean_text(t.lower())
+            for word in t:
+              if word not in stoplist:
+                token = stemmer.stem(word)
+
 
 ## Resultados experimentales
 
