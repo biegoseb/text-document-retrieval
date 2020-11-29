@@ -7,6 +7,7 @@
         placeholder="Search query"
         aria-label="Search query"
         aria-describedby="button-addon2"
+        v-model="query"
       />
       <div class="input-group-append">
         <button
@@ -79,12 +80,13 @@ export default {
     };
   },
   methods: {
-    async search_query() {
+    search_query() {
       const body = {
         query: this.query,
       };
-      axios.post("http://127.0.0.1:8081/query", body).then((response) => {
+      axios.post("http://127.0.0.1:8080/query/0", body).then((response) => {
         console.log(response);
+        this.tweets = response.data;
       });
     },
   },
