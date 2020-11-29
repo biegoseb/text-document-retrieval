@@ -12,11 +12,11 @@ CORS(app)
 def query():
     req = request.get_json()
     doc = inverted_index.compare_query(req['query'])
-    doc = doc[0:15]
     #print(doc[int(index)])
     tweets = []
     for tweet in doc:
-        #print(tweet["cosin"])
+        if tweet["cosine"] == 0:
+            break
         f = open(tweet["doc"], encoding='utf-8')
         file = json.loads(f.read())
         result = [x for x in file if x["id"]==tweet["id"]][0]

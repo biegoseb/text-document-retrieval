@@ -1,7 +1,15 @@
 <template>
   <div>
-    <img alt="Vue logo" src="./assets/logo.png" />
-    <Browser/>
+    <img
+      alt="Vue logo"
+      src="./assets/twitter-logo.png"
+      height="125"
+      width="220"
+      class="mb-5"
+    />
+    <div class="container">
+      <Browser />
+    </div>
   </div>
 </template>
 

@@ -21,7 +21,7 @@ stemmer = SnowballStemmer('spanish')
 class InvertedIndex:
   inverted_index = { }
   tweets_files = [ ]
-  tweets_count = 0
+  tweets_ids = [ ]
 
   def read_files(self):
     for base, dirs, files in os.walk(ROOT):
@@ -86,23 +86,17 @@ class InvertedIndex:
       text_list = [(e['text'],e['id']) for e in json.loads(json_file.read()) if not e["retweeted"]]
       json_file.close()
       for text in text_list:
-        self.tweets_count += 1
+        self.tweets_ids.append(text[1])
         t = text[0]
         t = self.clean_text(t.lower())
         for word in t:
           if word not in stoplist:
             token = stemmer.stem(word)
             if token not in self.inverted_index.keys():
-              self.inverted_index[token] = {"df":0, "tweets":[ ]}
-            if len(self.inverted_index[token]["tweets"]) > 0:
-              if self.inverted_index[token]["tweets"][-1]["id"] != text[1]:
-                self.inverted_index[token]["df"] += 1
-                self.inverted_index[token]["tweets"].append({"id":text[1], "tf":1, "doc":file})
-              else:
-                self.inverted_index[token]["tweets"][-1]["tf"] += 1
-            else:
-              self.inverted_index[token]["df"] += 1
-              self.inverted_index[token]["tweets"].append({"id":text[1], "tf":1, "doc":file})        
+              self.inverted_index[token] = {"tweets":{ }}
+            if text[1] not in self.inverted_index[token]["tweets"].keys():
+              self.inverted_index[token]["tweets"][text[1]] = {"tf":0, "doc":file}
+            self.inverted_index[token]["tweets"][text[1]]["tf"] += 1    
       cont += 1
       print(cont, file)
     self.calculate_tf_idf()
@@ -110,36 +104,32 @@ class InvertedIndex:
 
   def calculate_tf_idf(self):
     for token in self.inverted_index.keys():
-      self.inverted_index[token]["idf"] = math.log10(self.tweets_count/self.inverted_index[token]["df"])
+      df = 0
+      for tweet in self.inverted_index[token]["tweets"].keys():
+        if self.inverted_index[token]["tweets"][tweet]["tf"] != 0:
+          df += 1
+      self.inverted_index[token]["df"] = df
+      self.inverted_index[token]["idf"] = math.log10(len(self.tweets_ids)/self.inverted_index[token]["df"])
+    for token in self.inverted_index.keys():
       self.inverted_index[token]["score"] = 0
-      idf = self.inverted_index[token]["idf"]
-      for tweet in self.inverted_index[token]["tweets"]:
-        tf = tweet["tf"]     
-        tf_idf = (1 + math.log10(tf)) * idf
-        tweet["tf_idf"] = tf_idf
-        self.inverted_index[token]["score"] += tf_idf
+      for tweet in self.inverted_index[token]["tweets"].keys():   
+        self.inverted_index[token]["tweets"][tweet]["tf_idf"] = (1 + math.log10(self.inverted_index[token]["tweets"][tweet]["tf"])) * self.inverted_index[token]["idf"]
+        self.inverted_index[token]["score"] += self.inverted_index[token]["tweets"][tweet]["tf_idf"]
   
   def normalize(self):
-    for doc in self.tweets_files:
-      json_file = open(doc, encoding = 'utf-8')
-      for tweet in json.loads(json_file.read()):
-        if not tweet["retweeted"]:
-          norma = 0
-          txt = self.clean_text(tweet["text"].lower())
-          for word in txt:
-            if word not in stoplist:
-              word = stemmer.stem(word)
-              t = [x for x in self.inverted_index[word]["tweets"] if x["id"] == tweet["id"]]
-              norma += t[0]["tf_idf"]**2
-          norma = math.sqrt(norma)
-          for word in txt:
-            if word not in stoplist:
-              word = stemmer.stem(word)
-              t = [x for x in self.inverted_index[word]["tweets"] if x["id"] == tweet["id"]]
-              t[0]["norma"] = t[0]["tf_idf"]/norma
-      json_file.close()
-      print(doc)
-
+    count = 0
+    for tweet_id in self.tweets_ids:
+      norma = 0
+      for word in self.inverted_index.keys():
+        if tweet_id in self.inverted_index[word]["tweets"].keys():
+          norma += self.inverted_index[word]["tweets"][tweet_id]["tf_idf"]**2
+      norma = math.sqrt(norma)
+      for word in self.inverted_index.keys():
+        if tweet_id in self.inverted_index[word]["tweets"].keys():
+          self.inverted_index[word]["tweets"][tweet_id]["norma"] = self.inverted_index[word]["tweets"][tweet_id]["tf_idf"]/norma
+      count += 1
+      print(count, tweet_id)
+  
   def compare_query(self, query):
     query = self.clean_text(query)
     index_query = {}
@@ -152,27 +142,22 @@ class InvertedIndex:
     norma = 0
     for word in index_query.keys():
       if word in self.inverted_index.keys():
-        index_query[word]["tf_idf"] = (1+math.log10(index_query[word]["tf"])) * self. inverted_index[word]["idf"]
+        index_query[word]["tf_idf"] = (1+math.log10(index_query[word]["tf"])) * self.inverted_index[word]["idf"]
         norma += index_query[word]["tf_idf"]**2
     norma = math.sqrt(norma)
     for word in index_query.keys():
       if "tf_idf" in index_query[word].keys():
         index_query[word]["norma"] = index_query[word]["tf_idf"]/norma if norma != 0 else 0
-    cosenos = []
-    for file in self.tweets_files:
-      json_file = open(file, encoding = 'utf-8')
-      for tweet in json.loads(json_file.read()):
-        if not tweet["retweeted"]:
-          similarity = 0
-          for word in index_query.keys():
-            t = [x for x in self.inverted_index[word]["tweets"] if x["id"] == tweet["id"]]
-            if "norma" in index_query[word].keys() and len(t) > 0:
-              similarity += index_query[word]["norma"] * t[0]["norma"]
-          cosenos.append({"tweet":t[0], "cosin":similarity})
-    cosenos = sorted(cosenos, key = lambda v: v["cosin"], reverse=True)
-    return cosenos
+    cosines = []
+    for tweet_id in self.tweets_ids:
+      cosine = 0
+      for word in index_query.keys():
+        if word in self.inverted_index.keys():
+          cosine += index_query[word]["norma"] * self.inverted_index[word][tweet_id]["norma"]
+      cosines.append({"tweet":tweet_id, "cosine":cosine, "doc":self.inverted_index[word][tweet_id]["doc"]})  
+    cosines = sorted(cosines, key = lambda v: v["cosine"], reverse=True)
+    return cosines
     
-
 '''
 def main():
   index = InvertedIndex()
@@ -255,14 +240,13 @@ index = {
             "df": nº de tweets en los que aparece la palabra del total (20 mil)
             "idf": math.log10(20000/len(tweets)),
             "score": sum(tweets[i].tf_idf),
-            "tweets": [
-              {
-                "id": 1234134134
+            "tweets": {
+              "1234134134": {
                 "tf": nº de veces que se repite la palabra en el tuit
                 "tf_idf": (1 + log(tf)) * idf,
                 "norma": tf_idf/norm
               }
-            ]
+            }
           },
           "reggiar": {
             "df": nº de tweets en los que aparece la palabra del total (20 mil)
