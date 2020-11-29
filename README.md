@@ -1,5 +1,7 @@
 # Recuperación de Documentos de Texto
 
+![](screenshots/ss.png)
+
 ## Integrantes
 
 | Nombre y Apellidos |
