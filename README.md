@@ -30,13 +30,11 @@ Los datos utilizados como contenido son un conjunto de tweets en formato json. S
 
 En el informe se muestra las comparaciones al usar queries con los mejores resultados.
 
-## Construcción del índice invertido
-
-### Fundamentos y descripción de las técnicas
-
+## Implementación del índice invertido
 #### Backend
-
 Se ha construido un índice invertido óptimo para recuperación por ranking para consultas de texto libre.
+
+### Preprocesamiento
 
 ##### Filtrado de stopwords
 Con la ayuda de la librería *nltk* se crean los stopwords en español
@@ -80,15 +78,43 @@ Se hace uso de una función de limpieza que removerá caracteres especiales, sig
                 token = stemmer.stem(word)
 
 
+### Construcción del índice
+
+Se cargan los archivos de los tweets, y se almacena como tupla el *text* y *id* de cada tweet. Dentro del diccionario _inverted_index_ guardamos para cada indice su tf_idf, con esto se calcula su norma.
+
+    if token not in self.inverted_index.keys():
+              self.inverted_index[token] = {"df":0}
+            if file not in self.inverted_index[token].keys():
+              self.inverted_index[token]["df"] += 1
+              self.inverted_index[token][file] = {"tf":0}
+              self.inverted_index[token][file]["tweets"] = [ ]
+            found = False
+            for x in self.inverted_index[token][file]["tweets"]:
+              if x["tweet_id"] == text[1]:
+                found = True
+                x["freq"] += 1
+                break
+            if not found:
+              self.inverted_index[token][file]["tweets"].append({"tweet_id":text[1], "freq":1})
+            self.inverted_index[token][file]["tf"] += 1
+
+
+
+#### Consulta :
+>"El señor Daniel Urresti me bloqueo por cuestionar continuamente su candidatura"
+
+Para obtener los resultados de nuestra consulta seguimos estos pasos:
+
+* Se limpia la query en lenguaje natural
+* Se saca el TD e IDF
+* Se halla la frecuencia de cada palabra en el query
+* Si la palabra esta en un indice invertido, se calcula el indice invertido
+* Se obtiene el Tf-idf del query
+
+Al final, ordenamos en una lista de cosenos- que guarda el Id del documento,la similitud y su lista de tweets- de mayor a menor por el que tenga mayor similitud .
+
+## Frontend
 ### Resultados experimentales
-
-
-#### Consultas
-
-#### Nuestra consulta en lenguaje natural:
->El señor Daniel Urresti me bloqueo por cuestionar continuamente su candidatura
-
-
 Cuadros para ver el desempeño de los indice invertidos:
 
 
