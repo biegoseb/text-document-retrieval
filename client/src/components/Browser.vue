@@ -21,8 +21,12 @@
       </div>
     </div>
     <div class="container">
+      <div class="spinner-border text-primary align-self-center" style="width: 10rem; height: 10rem;" role="status" v-if="loading">
+        <span class="sr-only">Loading...</span>
+      </div>
       <div
         class="row w-100 mr-0 ml-0 justify-content-center"
+        v-else
         v-for="tweet in tweets"
         v-bind:key="tweet"
       >
@@ -65,6 +69,7 @@ export default {
   data() {
     return {
       query: "",
+      loading: false,
       tweets: [
         {
           id: 1041914794159292418,
@@ -84,9 +89,11 @@ export default {
       const body = {
         query: this.query,
       };
+      this.loading = true;
       axios.post("http://127.0.0.1:8081/query", body).then((response) => {
         console.log(response);
         this.tweets = response.data;
+        this.loading = false;
       });
     },
   },
