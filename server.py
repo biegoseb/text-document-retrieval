@@ -19,7 +19,7 @@ def query():
             break
         f = open(tweet["doc"], encoding='utf-8')
         file = json.loads(f.read())
-        result = [x for x in file if x["id"]==tweet["id"]][0]
+        result = [x for x in file if x["id"]==tweet["tweet"]][0]
         result['id'] = str(result['id'])
         result['user_id'] = str(result['user_id'])
         tweets.append(result)
