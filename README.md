@@ -16,7 +16,7 @@
 <summary>"Clic para navegar: "</summary>
 
 - [Introducción](#Introducción)
-- [Fundamentos y descripción de las técnicas](#Fundamentos-y-descripción-de-las-técnicas)
+- [Implementación del índice invertido](#Implementación del índice invertido)
 - [Resultados experimentales](#Resultados-experimentales)
 - [Pruebas de uso y presentación](#Pruebas-de-uso-y-presentación)
 
