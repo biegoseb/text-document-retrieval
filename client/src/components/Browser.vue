@@ -20,13 +20,26 @@
         </button>
       </div>
     </div>
-    <div class="container">
+    <div class="container cont-height">
+      <div
+        class="row h-100 justify-content-center align-items-center"
+        v-if="loading"
+      >
+        <div
+          class="spinner-border text-primary"
+          style="width: 5rem; height: 5rem"
+          role="status"
+        >
+          <span class="sr-only">Loading...</span>
+        </div>
+      </div>
       <div
         class="row w-100 mr-0 ml-0 justify-content-center"
+        v-else
         v-for="tweet in tweets"
         v-bind:key="tweet"
       >
-        <div class="tw-block-parent">
+        <div class="tw-block-parent w-100">
           <div class="timeline-TweetList-tweet">
             <div class="timeline-Tweet">
               <div class="timeline-Tweet-brand">
@@ -37,7 +50,7 @@
                   <a class="TweetAuthor-link" href="#channel"> </a
                   ><span class="TweetAuthor-avatar">
                     <div class="Avatar"></div></span
-                  ><span class="TweetAuthor-name">{{tweet.user_name}}</span
+                  ><span class="TweetAuthor-name">{{ tweet.user_name }}</span
                   ><span class="Icon Icon--verified"> </span
                   ><span class="TweetAuthor-screenName">{{
                     tweet.user_name
@@ -48,7 +61,7 @@
                 {{ tweet.text }}
               </div>
               <div class="timeline-Tweet-metadata">
-                <span class="timeline-Tweet-timestamp">{{ tweet.date}}</span>
+                <span class="timeline-Tweet-timestamp">{{ tweet.date }}</span>
               </div>
             </div>
           </div>
@@ -65,6 +78,7 @@ export default {
   data() {
     return {
       query: "",
+      loading: false,
       tweets: [],
     };
   },
@@ -73,9 +87,11 @@ export default {
       const body = {
         query: this.query,
       };
+      this.loading = true;
       axios.post("http://127.0.0.1:8080/query/0", body).then((response) => {
         console.log(response);
         this.tweets = response.data;
+        this.loading = false;
       });
     },
   },
@@ -84,6 +100,11 @@ export default {
 
 <style>
 @import "https://fonts.googleapis.com/css?family=Roboto:400,700&subset=cyrillic";
+.cont-height {
+  height: 60vh;
+  max-height: 60vh;
+  overflow-y: auto;
+}
 .tw-block-parent {
   /*width: 500px;*/
   font: 10px Roboto, Helvetica, Arial, Tahoma, sans-serif;

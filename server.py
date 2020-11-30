@@ -8,16 +8,16 @@ index = InvertedIndex()
 
 CORS(app)
 
-@app.route('/query/<index>', methods=["POST"])
-def query(index):
+@app.route('/query/<id>', methods=["POST"])
+def query(id):
     req = request.get_json()
     doc = index.compare_query(req['query'])
-    #print(doc[int(index)])
-    f = open(doc[int(index)]['docId'], encoding='utf-8')
+    #print(doc[int(id)])
+    f = open(doc[int(id)]['docId'], encoding='utf-8')
     file = json.loads(f.read())
     tweets_ids = []
-    for x in range(len(doc[int(index)]["results"])):
-        tweets_ids.append((doc[int(index)]["results"][x]["tweets"]))
+    for x in range(len(doc[int(id)]["results"])):
+        tweets_ids.append((doc[int(id)]["results"][x]["tweets"]))
     print(tweets_ids)
     tweets = []
     for x in tweets_ids:
@@ -32,11 +32,11 @@ def query(index):
 
 if __name__ == '__main__':
     index.create_inverted_index()
-    sys.stdout = open('inverted_index.txt', 'w')
-    sys.stdout.reconfigure(encoding = 'utf-8')
-    data_to_print = sorted(index.inverted_index.items())
-    for token in data_to_print:
-      data = json.dumps(token)
-      print(data)
+    #sys.stdout = open('inverted_index.txt', 'w')
+    #sys.stdout.reconfigure(encoding = 'utf-8')
+    #data_to_print = sorted(index.inverted_index.items())
+    #for token in data_to_print:
+    #  data = json.dumps(token)
+    #  print(data)
     app.secret_key = ".."
     app.run(port=8080, threaded=True, host=('127.0.0.1'))
