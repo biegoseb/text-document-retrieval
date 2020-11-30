@@ -1,3 +1,4 @@
+ 
 # Recuperación de Documentos de Texto
 
 ![](screenshots/ss.png)
@@ -125,4 +126,4 @@ Una de las conclusiones que obtuvimos es al momento de hacer una consulta con un
 
 
 ### Pruebas de uso y presentación
-Link del video de funcionalidad.[ Video de funcionalidad](https://drive.google.com/drive/folders/__________)
+Link del video de funcionalidad.[ Video de funcionalidad](https://drive.google.com/file/d/1WTxXRmY-XkIrbYO6LhAZuM8CegDI8o9x/view?usp=sharing) 
